@@ -37,7 +37,7 @@ export default function UploadField() {
   const isEmpty = files.length === 0;
 
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto">
       {isEmpty && (
         <motion.div
           initial={{ opacity: 0, y: 200 }}
@@ -57,9 +57,9 @@ export default function UploadField() {
       {isEmpty ? (
         <div
           {...getRootProps()}
-          className={`relative rounded-lg p-8 text-center cursor-pointer transition-all min-h-[240px] flex flex-col justify-center items-center ${
+          className={`relative rounded-lg p-15 text-center cursor-pointer transition-all min-h-[240px] flex flex-col justify-center items-center ${
             isDragActive ? 'border-[#634EFF] bg-purple-50' : ''
-          } ${darkMode ? 'bg-[#222]' : 'bg-[#FBFBFB]'}`}
+          } ${darkMode ? 'bg-[#222]' : 'bg-[#F3F4F6]'}`}
           style={{ position: 'relative', zIndex: 1 }}
         >
           {/* Custom border with the SVG styling */}
@@ -80,7 +80,7 @@ export default function UploadField() {
                 <p className="text-lg font-medium text-[#634EFF]">Drop your files here</p>
               ) : (
                 <>
-                  <p className={`text-lg font-medium ${darkMode ? 'text-gray-200' : 'text-[#634EFF]'}`}>Drag & drop your files here</p>
+                  <p className={`text-lg font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Drag & drop your files here</p>
                   <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>or click to browse files</p>
                 </>
               )}
