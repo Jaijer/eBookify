@@ -36,7 +36,7 @@ export default function UploadField() {
   return (
     <div className="w-full max-w-xl mx-auto">
       {isEmpty ? (
-        <div className="mb-8 flex justify-center">
+        <div className="flex justify-center">
           <MageCharacter />
         </div>
       ) : null}
