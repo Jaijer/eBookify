@@ -57,21 +57,21 @@ export default function UploadField() {
       {isEmpty ? (
         <div
           {...getRootProps()}
-          className={`relative rounded-lg p-15 text-center cursor-pointer transition-all min-h-[240px] flex flex-col justify-center items-center ${
-            isDragActive ? 'border-[#634EFF] bg-purple-50' : ''
-          } ${darkMode ? 'bg-[#222]' : 'bg-[#F3F4F6]'}`}
+
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-lg p-15 text-center cursor-pointer transition-all ${
+            isDragActive ? 'border-[#6246ea] bg-purple-50' : 'border-gray-300 hover:border-[#757575]'
+          } ${darkMode ? 'bg-[#1E2939]' : 'bg-[#F3F4F6]'} `}
           style={{ position: 'relative', zIndex: 1 }}
         >
-          {/* Custom border with the SVG styling */}
-          <div className={`absolute inset-0 rounded-[20px] pointer-events-none ${
-            darkMode ? 'border border-gray-700' : 'border border-[#634EFF] border-opacity-40'
-          } ${isDragActive ? 'border-[#634EFF] border-opacity-100' : ''}`} 
-          style={{ borderStyle: darkMode ? 'solid' : 'dashed', borderWidth: '1px', borderRadius: '20px' }}></div>
+
+
+
           
           <input {...getInputProps()} />
           <div className="flex flex-col items-center justify-center space-y-4 z-10">
             <div className={`p-4 rounded-full ${isDragActive ? 'bg-purple-100' : darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-              <svg className={`w-10 h-10 ${isDragActive ? 'text-[#634EFF]' : darkMode ? 'text-gray-400' : 'text-[#634EFF]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-25 h-25 ${isDragActive ? 'text-[#634EFF]' : darkMode ? 'text-gray-400' : 'text-[#634EFF]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
               </svg>
             </div>
@@ -85,7 +85,7 @@ export default function UploadField() {
                 </>
               )}
             </div>
-            <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-4`}>Supports PDF files and images up to 50MB</p>
+            <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-4`}>Supports PDF files up to 50MB</p>
           </div>
         </div>
       ) : (
