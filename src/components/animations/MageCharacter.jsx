@@ -51,7 +51,7 @@ export default function MageCharacter() {
         {/* SVG Mage Character */}
         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
           {/* Hat */}
-          <path d="M30 50 L50 20 L70 50 Z" fill="#6246ea" />
+          <path d="M30 50 L50 20 L70 50 Z" fill="#4b4b4b" />
           
           {/* Face */}
           <circle cx="50" cy="60" r="20" fill="#f8d8be" />
