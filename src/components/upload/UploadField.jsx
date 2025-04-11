@@ -41,7 +41,7 @@ export default function UploadField() {
           initial={{ opacity: 0, y: 200 }} // Start invisible and below
           animate={{ opacity: 1, y: 0 }}    // Fade in and slide to the top
           transition={{
-            delay: 1.5,         // Wait 1.5s before starting the animation
+            delay: 1,         // Wait 1.5s before starting the animation
             duration: 1,        // Animation duration
             ease: 'easeOut'     // Smooth easing effect
           }}
