@@ -2,9 +2,11 @@
 
 import { motion } from 'framer-motion';
 import { useConversion } from '@/contexts/ConversionContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ConversionProgress() {
   const { status, progress, file } = useConversion();
+  const { darkMode } = useTheme();
   
   // Don't show if we're idle or complete
   if (status === 'idle' || status === 'complete') {
@@ -31,20 +33,22 @@ export default function ConversionProgress() {
   const currentStageMessage = progressStages.find(stage => progress <= stage.threshold)?.message;
   
   return (
-    <div className="w-full max-w-xl mx-auto mt-8 bg-white rounded-lg shadow-md p-6">
+    <div className={`w-full max-w-xl mx-auto mt-8 rounded-lg shadow-md p-6 ${
+      darkMode ? 'bg-[#222] text-[#f0f0f0]' : 'bg-white text-gray-900'
+    }`}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900">
+        <h3 className="text-lg font-medium">
           {statusMessages[status]}
         </h3>
-        <span className="text-sm font-medium text-gray-500">
+        <span className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
           {Math.round(progress)}%
         </span>
       </div>
       
       {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+      <div className={`w-full rounded-full h-2.5 mb-4 ${darkMode ? 'bg-[#333]' : 'bg-gray-200'}`}>
         <motion.div 
-          className="bg-primary-600 h-2.5 rounded-full"
+          className="bg-[#6246ea] h-2.5 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.5 }}
@@ -52,16 +56,16 @@ export default function ConversionProgress() {
       </div>
       
       {/* Current stage message */}
-      <p className="text-sm text-gray-600">{currentStageMessage}</p>
+      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{currentStageMessage}</p>
       
       {/* File information */}
       {file && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex items-center text-sm text-gray-500">
+        <div className={`mt-4 pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className={`flex items-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             <span className="font-medium mr-2">File:</span>
             <span className="truncate">{file.name}</span>
           </div>
-          <div className="flex items-center text-sm text-gray-500 mt-1">
+          <div className={`flex items-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
             <span className="font-medium mr-2">Size:</span>
             <span>{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
           </div>

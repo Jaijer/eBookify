@@ -1,3 +1,6 @@
+'use client';
+
+import { useTheme } from '@/contexts/ThemeContext';
 import { ConversionProvider } from '@/contexts/ConversionContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -6,18 +9,24 @@ import ConversionProgress from '@/components/conversion/ConversionProgress';
 import ConversionResult from '@/components/conversion/ConversionResult';
 
 export default function Home() {
+  const { darkMode } = useTheme();
+
   return (
     <ConversionProvider>
-      <div className="min-h-screen bg-white p-8">
+      <div className={`min-h-screen p-8 transition-colors duration-300 ${
+        darkMode ? 'bg-[#121212] text-[#f0f0f0]' : 'bg-white text-gray-900'
+      }`}>
         <div className="max-w-6xl mx-auto">
           <Header />
           
           <main className="flex-grow container mx-auto flex flex-col items-center justify-center">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              <h2 className="text-4xl font-bold mb-4">
                 PDF File Converter
               </h2>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              <p className={`text-xl max-w-2xl mx-auto leading-relaxed ${
+                darkMode ? 'text-[#aaa]' : 'text-gray-600'
+              }`}>
                 Welcome to eBookify – your go-to platform for converting PDF files or pictures into
                 e-book file formats. We designed eBookify for digital bookworms, making it easy for you
                 to enjoy your content in its new e-book format.
