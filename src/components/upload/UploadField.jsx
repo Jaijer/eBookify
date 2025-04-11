@@ -77,11 +77,11 @@ export default function UploadField() {
             </div>
             <div>
               {isDragActive ? (
-                <p className="text-lg font-medium text-[#634EFF]">Drop your files here</p>
+                <p className="text-xl font-medium text-[#634EFF]">Drop your files here</p>
               ) : (
                 <>
-                  <p className={`text-lg font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Drag & drop your files here</p>
-                  <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>or click to browse files</p>
+                  <p className={`text-3xl font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Drag & drop your files here</p>
+                  <p className={`mt-2 text-2xl ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>or click to browse files</p>
                 </>
               )}
             </div>
