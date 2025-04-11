@@ -57,24 +57,30 @@ export default function UploadField() {
       {isEmpty ? (
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${
-            isDragActive ? 'border-[#6246ea] bg-purple-50' : 'border-gray-300 hover:border-[#6246ea]'
-          } ${darkMode ? 'bg-[#222]' : 'bg-white'}`}
+          className={`relative rounded-lg p-8 text-center cursor-pointer transition-all min-h-[240px] flex flex-col justify-center items-center ${
+            isDragActive ? 'border-[#634EFF] bg-purple-50' : ''
+          } ${darkMode ? 'bg-[#222]' : 'bg-[#FBFBFB]'}`}
           style={{ position: 'relative', zIndex: 1 }}
         >
+          {/* Custom border with the SVG styling */}
+          <div className={`absolute inset-0 rounded-[20px] pointer-events-none ${
+            darkMode ? 'border border-gray-700' : 'border border-[#634EFF] border-opacity-40'
+          } ${isDragActive ? 'border-[#634EFF] border-opacity-100' : ''}`} 
+          style={{ borderStyle: darkMode ? 'solid' : 'dashed', borderWidth: '1px', borderRadius: '20px' }}></div>
+          
           <input {...getInputProps()} />
-          <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="flex flex-col items-center justify-center space-y-4 z-10">
             <div className={`p-4 rounded-full ${isDragActive ? 'bg-purple-100' : darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-              <svg className={`w-10 h-10 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-10 h-10 ${isDragActive ? 'text-[#634EFF]' : darkMode ? 'text-gray-400' : 'text-[#634EFF]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
               </svg>
             </div>
             <div>
               {isDragActive ? (
-                <p className="text-lg font-medium text-[#6246ea]">Drop your files here</p>
+                <p className="text-lg font-medium text-[#634EFF]">Drop your files here</p>
               ) : (
                 <>
-                  <p className={`text-lg font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Drag & drop your files here</p>
+                  <p className={`text-lg font-medium ${darkMode ? 'text-gray-200' : 'text-[#634EFF]'}`}>Drag & drop your files here</p>
                   <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>or click to browse files</p>
                 </>
               )}
@@ -87,7 +93,7 @@ export default function UploadField() {
       )}
 
       {!isEmpty && (
-        <button className="w-full bg-[#6246ea] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center mt-6 hover:bg-[#5438d0] transition-colors duration-300">
+        <button className="w-full bg-[#634EFF] text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center mt-6 hover:bg-[#5438d0] transition-colors duration-300">
           <span className="mr-2">↻</span> Convert Now
         </button>
       )}
