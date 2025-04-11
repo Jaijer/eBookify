@@ -24,10 +24,10 @@ export default function Home() {
               <h2 className="text-4xl font-bold mb-4">
                 PDF File Converter
               </h2>
-              <p className={`text-xl max-w-2xl mx-auto leading-relaxed ${
+              <p className={`text-xl max-w-2xl mx-auto leading-tight ${
                 darkMode ? 'text-[#aaa]' : 'text-gray-600'
-              }`}>
-                Welcome to eBookify – your go-to platform for converting PDF files or pictures into
+              } text-justify`}>
+                  Welcome to eBookify, your go-to platform for converting PDF files into 
                 e-book file formats. We designed eBookify for digital bookworms, making it easy for you
                 to enjoy your content in its new e-book format.
               </p>
