@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function Header() {
@@ -7,7 +8,9 @@ export default function Header() {
 
   return (
     <header className="flex justify-between items-center mb-12">
-      <h1 className="text-2xl font-bold text-[#6246ea]">EBOOKIFY</h1>
+      <Link href="/" className="cursor-pointer">
+        <h1 className="text-2xl font-bold text-[#6246ea]">EBOOKIFY</h1>
+      </Link>
       
       <div className="flex items-center gap-4">
         <div 
