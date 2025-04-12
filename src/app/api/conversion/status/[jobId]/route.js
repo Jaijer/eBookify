@@ -4,8 +4,16 @@ import { conversionJobs } from '../../upload/route';
 
 export async function GET(request, { params }) {
   try {
-    // Properly destructure params after awaiting
-    const jobId = params.jobId;
+    // Properly destructure params
+    const jobId = params?.jobId;
+    
+    if (!jobId) {
+      return NextResponse.json(
+        { error: 'Job ID is required' }, 
+        { status: 400 }
+      );
+    }
+
     const job = conversionJobs.get(jobId);
     
     if (!job) {
@@ -19,7 +27,8 @@ export async function GET(request, { params }) {
       status: job.status,
       progress: job.progress,
       resultUrl: job.resultUrl,
-      error: job.error
+      error: job.error,
+      originalFilename: job.originalFilename
     });
     
   } catch (error) {

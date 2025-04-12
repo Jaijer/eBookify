@@ -3,8 +3,6 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
-import { PDFDocument } from 'pdf-lib';
-
 
 /**
  * Convert a PDF or image file to text

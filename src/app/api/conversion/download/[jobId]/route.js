@@ -7,7 +7,16 @@ import { cleanupFile } from '@/lib/conversion';
 
 export async function GET(request, { params }) {
   try {
-    const { jobId } = params;
+    // Properly destructure params
+    const jobId = params?.jobId;
+    
+    if (!jobId) {
+      return NextResponse.json(
+        { error: 'Job ID is required' }, 
+        { status: 400 }
+      );
+    }
+
     const job = conversionJobs.get(jobId);
     
     if (!job || job.status !== 'complete') {
@@ -28,24 +37,29 @@ export async function GET(request, { params }) {
     }
     
     // Read the file content
-    const fileBuffer = await fs.readFile(job.outputPath);
+    const fileContent = await fs.readFile(job.outputPath, 'utf-8');
     
-    // Prepare filename
+    // Prepare filename - sanitize and ensure ASCII-only
     const originalName = job.originalFilename || 'document';
-    const downloadName = originalName.replace(/\.(pdf|jpg|jpeg|png|tiff|bmp|webp)$/i, '.txt');
+    const baseName = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
+    const safeName = baseName.replace(/[^\x00-\x7F]/g, ''); // Remove non-ASCII chars
+    const downloadName = `${safeName}.txt` || 'converted.txt';
     
-    // Return file as a response
-    const response = new NextResponse(fileBuffer);
+    // Create response with file content
+    const response = new NextResponse(fileContent);
     
     // Set headers for file download
-    response.headers.set('Content-Disposition', `attachment; filename="${downloadName}"`);
+    response.headers.set('Content-Disposition', `attachment; filename="${encodeURIComponent(downloadName)}"`);
     response.headers.set('Content-Type', 'text/plain; charset=utf-8');
     
     // Schedule cleanup after download (async)
-    setTimeout(() => {
-      // Only clean up files after download, keep job info
-      if (job.filePath) cleanupFile(job.filePath);
-      if (job.outputPath) cleanupFile(job.outputPath);
+    setTimeout(async () => {
+      try {
+        if (job.filePath) await cleanupFile(job.filePath);
+        if (job.outputPath) await cleanupFile(job.outputPath);
+      } catch (cleanupError) {
+        console.error('Cleanup failed:', cleanupError);
+      }
     }, 5000);
     
     return response;
@@ -53,7 +67,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error('Download error:', error);
     return NextResponse.json(
-      { error: 'Download failed' }, 
+      { error: 'Download failed: ' + error.message }, 
       { status: 500 }
     );
   }
