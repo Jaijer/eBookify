@@ -6,15 +6,46 @@ import Footer from '@/components/layout/Footer';
 import UploadField from '@/components/upload/UploadField';
 import ConversionProgress from '@/components/conversion/ConversionProgress';
 import ConversionResult from '@/components/conversion/ConversionResult';
+import EntranceLines from '@/components/animations/EntranceLines';
+import PageLoader from '@/components/animations/PageLoader';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const { darkMode } = useTheme();
+  const [showContent, setShowContent] = useState(false);
+  const [loaderFinished, setLoaderFinished] = useState(false);
+
+  // This effect handles the animation sequence
+  useEffect(() => {
+    // Step 1: Page Loader (handled internally in the PageLoader component)
+    const loaderTimer = setTimeout(() => {
+      setLoaderFinished(true); // Signal that loader is finished
+      
+      // Step 2: After loader finishes, show content with a slight delay
+      const contentTimer = setTimeout(() => {
+        setShowContent(true);
+      }, 300);
+      
+      return () => clearTimeout(contentTimer);
+    }, 2000); // Should be slightly longer than the PageLoader's internal timing
+    
+    return () => clearTimeout(loaderTimer);
+  }, []);
+
   return (
     <ConversionProvider>
       <div className={`min-h-screen transition-colors duration-300 ${
         darkMode ? 'bg-[#121212] text-[#f0f0f0]' : 'bg-white text-gray-900'
       }`}>
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Page loader - Passes the setLoaderFinished callback */}
+        <PageLoader onFinish={() => setLoaderFinished(true)} />
+        
+        {/* Entrance lines component */}
+        <EntranceLines />
+        
+        <div className={`max-w-6xl mx-auto px-4 py-8 transition-opacity duration-500 ${
+          showContent ? 'opacity-100' : 'opacity-0'
+        }`}>
           <Header />
           
           <main className="flex-grow flex flex-col items-center justify-center py-12">
@@ -32,7 +63,7 @@ export default function Home() {
             </div>
             
             <div className="w-full">
-              <UploadField />
+              <UploadField loaderFinished={loaderFinished} />
               <ConversionProgress />
               <ConversionResult />
             </div>
