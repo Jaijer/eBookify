@@ -58,7 +58,11 @@ export default function UploadField() {
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-lg p-15 text-center cursor-pointer transition-all ${
-            isDragActive ? 'border-[#6246ea] bg-purple-50' : 'border-gray-300 hover:border-[#757575]'
+            isDragActive 
+              ? 'border-[#6246ea] bg-purple-50' 
+              : darkMode 
+                ? 'border-gray-700 hover:border-[#757575]' 
+                : 'border-gray-300 hover:border-[#6246ea]'
           } ${darkMode ? 'bg-[#1E2939]' : 'bg-[#F3F4F6]'} `}
           style={{ position: 'relative', zIndex: 1, padding: '3rem 1.5rem' }}
         >
