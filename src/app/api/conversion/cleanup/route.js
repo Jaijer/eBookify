@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
-import { conversionJobs } from '../conversion/upload/route';
+import { conversionJobs } from '../../upload/route';
 import { cleanupFile } from '@/lib/conversion';
 
 // This route could be called by a scheduled task or explicitly
