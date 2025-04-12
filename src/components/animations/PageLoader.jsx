@@ -12,17 +12,16 @@ const PageLoader = ({ onFinish }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setVisible(false);
-      // Call the onFinish callback when loader is done
       if (typeof onFinish === 'function') {
         onFinish();
       }
-    }, 1800); // Extended time to allow for the full animation
-    
+    }, 2200); // Slightly longer overall duration
+
     return () => clearTimeout(timer);
   }, [onFinish]);
-  
+
   if (!visible) return null;
-  
+
   return (
     <motion.div
       className="fixed inset-0 z-[60] flex items-center justify-center"
@@ -30,7 +29,7 @@ const PageLoader = ({ onFinish }) => {
       animate={{ opacity: 0 }}
       transition={{ 
         duration: 0.8,
-        delay: 1.0,
+        delay: 1.6, // Delay the fade-out to let EBOOKIFY + underline linger
         ease: "easeInOut"
       }}
       style={{
@@ -59,10 +58,10 @@ const PageLoader = ({ onFinish }) => {
             className="absolute bottom-0 left-[2%] h-[3px] bg-[#6246ea]"
             initial={{ scaleX: 0, opacity: 0 }}
             animate={{ scaleX: 1, opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
+            transition={{ delay: 0.4, duration: 0.8 }} // Slightly longer underline animation
             style={{ 
               transformOrigin: 'left',
-              width: '96%', // Shortened to 96% of text width
+              width: '96%',
             }}
           />
         </div>
