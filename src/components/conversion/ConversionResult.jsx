@@ -38,7 +38,7 @@ export default function ConversionResult() {
             </h3>
             
             <p className={`text-center mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Your e-book is ready to download
+              Your text file is ready to download
             </p>
             
             {/* File details */}
@@ -51,10 +51,10 @@ export default function ConversionResult() {
                 </div>
                 <div className="ml-4 flex-1">
                   <h4 className="text-sm font-medium">
-                    {file?.name.replace('.pdf', '.epub')}
+                    {file?.name.replace(/\.(pdf|jpg|jpeg|png|tiff|bmp|webp)$/i, '.txt')}
                   </h4>
                   <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    EPUB format • Compatible with most e-readers
+                    Text format • Easily editable plain text
                   </p>
                 </div>
               </div>
@@ -69,7 +69,7 @@ export default function ConversionResult() {
                 className="flex-1 bg-[#6246ea] hover:bg-[#5438d0] text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center transition-colors duration-300"
               >
                 <FiDownload className="mr-2" />
-                Download EPUB
+                Download Text File
               </motion.button>
               
               <motion.button

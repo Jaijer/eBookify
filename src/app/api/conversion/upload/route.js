@@ -92,6 +92,7 @@ export async function POST(request) {
 }
 
 async function startConversion(jobId) {
+  console.log(jobId)
   const job = conversionJobs.get(jobId);
   
   if (!job) return;
@@ -109,10 +110,10 @@ async function startConversion(jobId) {
     
     // Progress updates
     const progressUpdates = [
-      { progress: 30, delay: 1000 },  // Initial processing
-      { progress: 50, delay: 3000 },  // OCR processing
-      { progress: 70, delay: 2000 },  // Text extraction
-      { progress: 90, delay: 1000 }   // Finalizing
+      { progress: 30, delay: 500 },  // Initial processing
+      { progress: 50, delay: 1000 }, // Text extraction
+      { progress: 70, delay: 1000 }, // Text formatting
+      { progress: 90, delay: 500 }   // Finalizing
     ];
     
     let currentUpdateIndex = 0;
@@ -130,9 +131,11 @@ async function startConversion(jobId) {
     }, progressUpdates[currentUpdateIndex].delay);
     
     try {
+      console.log("Before converting")
       // Perform the actual conversion
       await convertToText(job.filePath, job.outputPath);
-      
+      console.log("After converting")
+
       // Set job to complete
       job.status = 'complete';
       job.progress = 100;
