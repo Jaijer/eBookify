@@ -1,7 +1,18 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const Wizard = () => {
   const eyesRef = useRef([]);
+  const [isDesktop, setIsDesktop] = useState(true);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth > 1024);
+    };
+
+    handleResize(); // check on mount
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const eyeball = (event) => {
@@ -25,27 +36,31 @@ const Wizard = () => {
       });
     };
 
-    document.body.addEventListener("mousemove", eyeball);
-    return () => document.body.removeEventListener("mousemove", eyeball);
-  }, []);
+    if (isDesktop) {
+      document.body.addEventListener("mousemove", eyeball);
+      return () => document.body.removeEventListener("mousemove", eyeball);
+    }
+  }, [isDesktop]);
 
   return (
     <div style={styles.body}>
       <div className="wizard" style={styles.wizard}>
+        <img src="/wizard.png" alt="The wizard was here" style={styles.img} />
 
-<img src="/wizard.png" alt="The wizard was here" style={styles.img} />
-        <div className="eyes" style={styles.eyes}>
-          {[0, 1].map((_, i) => (
-            <div
-              key={i}
-              className="eye"
-              style={styles.eye}
-              ref={(el) => (eyesRef.current[i] = el)}
-            >
-              <div className="pupil" style={styles.pupil}></div>
-            </div>
-          ))}
-        </div>
+        {isDesktop && (
+          <div className="eyes" style={styles.eyes}>
+            {[0, 1].map((_, i) => (
+              <div
+                key={i}
+                className="eye"
+                style={styles.eye}
+                ref={(el) => (eyesRef.current[i] = el)}
+              >
+                <div className="pupil" style={styles.pupil}></div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
