@@ -6,16 +6,22 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 const PageLoader = ({ onFinish }) => {
   const [visible, setVisible] = useState(true);
+  const [underlineWidth, setUnderlineWidth] = useState(0);
   const { darkMode } = useTheme();
   const textRef = useRef(null);
-  
+
   useEffect(() => {
+    if (textRef.current) {
+      // Adjust to end exactly under the 'Y'
+      setUnderlineWidth(textRef.current.offsetWidth - 5); 
+    }
+
     const timer = setTimeout(() => {
       setVisible(false);
       if (typeof onFinish === 'function') {
         onFinish();
       }
-    }, 2200); // Slightly longer overall duration
+    }, 2200);
 
     return () => clearTimeout(timer);
   }, [onFinish]);
@@ -29,7 +35,7 @@ const PageLoader = ({ onFinish }) => {
       animate={{ opacity: 0 }}
       transition={{ 
         duration: 0.8,
-        delay: 1.6, // Delay the fade-out to let EBOOKIFY + underline linger
+        delay: 1.6,
         ease: "easeInOut"
       }}
       style={{
@@ -55,13 +61,13 @@ const PageLoader = ({ onFinish }) => {
         >
           EBOOKIFY
           <motion.div 
-            className="absolute bottom-0 left-[2%] h-[3px] bg-[#6246ea]"
+            className="absolute bottom-0 left-0 h-[3px] bg-[#6246ea]"
             initial={{ scaleX: 0, opacity: 0 }}
             animate={{ scaleX: 1, opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }} // Slightly longer underline animation
+            transition={{ delay: 0.4, duration: 0.8 }}
             style={{ 
               transformOrigin: 'left',
-              width: '96%',
+              width: underlineWidth ? `${underlineWidth}px` : '100%',
             }}
           />
         </div>
