@@ -16,109 +16,36 @@ const EReaderComponent = ({ text, title }) => {
   const [lineHeight, setLineHeight] = useState(1.6);
   const [processedPages, setProcessedPages] = useState([text || 'No content to display']);
   const containerRef = useRef(null);
+  const contentRef = useRef(null);
   
   const documentTitle = title || 'Converted Document';
   
-  const processTextIntoPages = () => {
-    if (!text || !containerRef.current) return [text || 'No content to display'];
+  // Modified to handle scrolling instead of pagination
+  const prepareText = () => {
+    if (!text) return 'No content to display';
     
-    // Create temporary content element to measure text
-    const tempContent = document.createElement('div');
-    tempContent.style.fontSize = `${fontSize}px`;
-    tempContent.style.fontFamily = fontFamily;
-    tempContent.style.lineHeight = lineHeight;
-    tempContent.style.width = `${containerRef.current.clientWidth - 40}px`; // Account for padding
-    tempContent.style.height = `${containerRef.current.clientHeight - 120}px`; // Account for header/footer
-    tempContent.style.position = 'absolute';
-    tempContent.style.visibility = 'hidden';
-    tempContent.style.overflow = 'hidden'; // No scrollbar in measurement
-    tempContent.style.padding = '0 10px';
-    document.body.appendChild(tempContent);
-    
-    // Split text by paragraphs with improved handling
+    // Split text by paragraphs
     const paragraphs = text.split(/\n\s*\n/);
-    const pages = [];
-    let currentPageText = [];
-    let currentHeight = 0;
     
-    // Reserve a small buffer at the bottom to ensure text isn't cut off
-    const heightBuffer = 5; // 5px buffer
-    const availableHeight = tempContent.clientHeight - heightBuffer;
-    
-    for (const paragraph of paragraphs) {
-      if (!paragraph.trim()) continue;
-      
-      // Try to add the whole paragraph
-      tempContent.textContent = paragraph;
-      const paragraphHeight = tempContent.scrollHeight;
-      
-      if (currentHeight + paragraphHeight > availableHeight) {
-        // Paragraph doesn't fit on current page
-        if (currentPageText.length === 0) {
-          // If this is the first paragraph on the page, we need to split it
-          const words = paragraph.split(' ');
-          let testText = '';
-          let remainingText = '';
-          
-          // Try adding words until we reach the height limit
-          for (let i = 0; i < words.length; i++) {
-            const previousText = testText;
-            testText += (i > 0 ? ' ' : '') + words[i];
-            tempContent.textContent = testText;
-            
-            if (tempContent.scrollHeight > availableHeight) {
-              // We've exceeded the height, go back one word
-              testText = previousText;
-              remainingText = words.slice(i).join(' ');
-              break;
-            }
-          }
-          
-          // Add the portion that fits to the current page
-          if (testText.trim()) {
-            pages.push(testText);
-          }
-          
-          // Start a new page with the remaining text
-          currentPageText = remainingText ? [remainingText] : [];
-          
-          // Recalculate height for the new page
-          tempContent.textContent = remainingText;
-          currentHeight = remainingText ? tempContent.scrollHeight : 0;
-        } else {
-          // Add the current page text to pages
-          pages.push(currentPageText.join('\n\n'));
-          // Start a new page with this paragraph
-          currentPageText = [paragraph];
-          currentHeight = paragraphHeight;
-        }
-      } else {
-        // Paragraph fits, add it to current page
-        currentPageText.push(paragraph);
-        currentHeight += paragraphHeight;
-      }
-    }
-    
-    // Add the last page if there's any content left
-    if (currentPageText.length > 0) {
-      pages.push(currentPageText.join('\n\n'));
-    }
-    
-    // Clean up
-    document.body.removeChild(tempContent);
-    
-    return pages.length > 0 ? pages : [text || 'No content to display'];
+    // Join paragraphs with proper spacing
+    return paragraphs
+      .filter(p => p.trim())
+      .join('\n\n');
   };
   
   const goToNextPage = () => {
-    if (currentPage < totalPages - 1) {
-      setCurrentPage(currentPage + 1);
+    if (contentRef.current) {
+      // Scroll down by viewport height
+      const scrollAmount = contentRef.current.clientHeight * 0.9;
+      contentRef.current.scrollTop += scrollAmount;
     }
   };
   
   const goToPrevPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1);
+    if (contentRef.current) {
+      // Scroll up by viewport height
+      const scrollAmount = contentRef.current.clientHeight * 0.9;
+      contentRef.current.scrollTop -= scrollAmount;
     }
   };
   
@@ -127,28 +54,21 @@ const EReaderComponent = ({ text, title }) => {
   };
   
   useEffect(() => {
-    const handleResize = () => {
-      const pages = processTextIntoPages();
-      setProcessedPages(pages);
-      setTotalPages(Math.max(1, pages.length));
-      if (currentPage >= pages.length) {
-        setCurrentPage(0);
-      }
-    };
+    // Initialize the content when text changes
+    const formattedText = prepareText();
+    setProcessedPages([formattedText]);
     
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [text, fontSize, fontFamily, lineHeight, currentPage]);
+    // Reset scroll position when text changes
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+  }, [text]);
   
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'ArrowRight') {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
         goToNextPage();
-      } else if (e.key === 'ArrowLeft') {
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
         goToPrevPage();
       }
     };
@@ -157,7 +77,7 @@ const EReaderComponent = ({ text, title }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [currentPage, totalPages]);
+  }, []);
   
   const getThemeStyles = () => {
     switch (readerTheme) {
@@ -366,43 +286,42 @@ const EReaderComponent = ({ text, title }) => {
                   </div>
                 </div>
                 
-                {/* Page content with no scrollbar */}
+                {/* Page content with scrollbar hidden but functional */}
                 <div 
-                  className="flex-1 p-5 overflow-hidden whitespace-pre-wrap"
+                  ref={contentRef}
+                  className="flex-1 p-5 overflow-y-auto scrollbar-hide whitespace-pre-wrap"
                   style={{ 
                     fontSize: `${fontSize}px`,
                     fontFamily: fontFamily,
                     lineHeight: lineHeight,
+                    scrollbarWidth: 'none', /* Firefox */
+                    msOverflowStyle: 'none', /* IE and Edge */
                   }}
                 >
-                  {processedPages[currentPage]}
+                  {processedPages[0]}
                 </div>
                 
-                {/* Navigation buttons */}
-                {currentPage > 0 && (
-                  <button 
-                    onClick={goToPrevPage}
-                    className="absolute left-0 top-1/2 transform -translate-y-1/2 p-2 rounded-r-md"
-                    style={{ backgroundColor: themeStyles.hoverBg }}
-                    aria-label="Previous page"
-                  >
-                    <FiChevronLeft size={24} />
-                  </button>
-                )}
+                {/* Navigation buttons - keep them for page-like navigation */}
+                <button 
+                  onClick={goToPrevPage}
+                  className="absolute left-0 top-1/2 transform -translate-y-1/2 p-2 rounded-r-md"
+                  style={{ backgroundColor: themeStyles.hoverBg }}
+                  aria-label="Scroll up"
+                >
+                  <FiChevronLeft size={24} />
+                </button>
                 
-                {currentPage < totalPages - 1 && (
-                  <button 
-                    onClick={goToNextPage}
-                    className="absolute right-0 top-1/2 transform -translate-y-1/2 p-2 rounded-l-md"
-                    style={{ backgroundColor: themeStyles.hoverBg }}
-                    aria-label="Next page"
-                  >
-                    <FiChevronRight size={24} />
-                  </button>
-                )}
+                <button 
+                  onClick={goToNextPage}
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 p-2 rounded-l-md"
+                  style={{ backgroundColor: themeStyles.hoverBg }}
+                  aria-label="Scroll down"
+                >
+                  <FiChevronRight size={24} />
+                </button>
               </div>
               
-              {/* Footer */}
+              {/* Footer without pagination indicators */}
               <div 
                 className="px-5 py-3 flex justify-between items-center border-t"
                 style={{ 
@@ -412,7 +331,8 @@ const EReaderComponent = ({ text, title }) => {
               >
                 <div className="w-8"></div> {/* Spacer */}
                 <div className="text-sm">
-                  {currentPage + 1} of {totalPages}
+                  {/* Show scroll position indicator instead of pages */}
+                  Scroll to read
                 </div>
                 <button 
                   onClick={toggleReaderTheme}
@@ -427,6 +347,20 @@ const EReaderComponent = ({ text, title }) => {
           </div>
         </motion.div>
       </div>
+      
+      {/* Add CSS to hide scrollbars globally */}
+      <style jsx global>{`
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .scrollbar-hide {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+      `}</style>
     </div>
   );
 };

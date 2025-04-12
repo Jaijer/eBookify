@@ -16,6 +16,7 @@ export default function ConversionResult() {
   const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const isMounted = useRef(true);
+  const currentJobIdRef = useRef(null);
   
   useEffect(() => {
     return () => {
@@ -23,8 +24,24 @@ export default function ConversionResult() {
     };
   }, []);
   
+  // Reset document text when conversion is reset
   useEffect(() => {
-    if (status === 'complete' && viewMode === 'reader' && jobId && !documentText) {
+    if (status === 'idle') {
+      setDocumentText('');
+      setFetchError(null);
+      currentJobIdRef.current = null;
+    }
+  }, [status]);
+
+  // Update the current job ID reference when it changes
+  useEffect(() => {
+    if (jobId) {
+      currentJobIdRef.current = jobId;
+    }
+  }, [jobId]);
+  
+  useEffect(() => {
+    if (status === 'complete' && viewMode === 'reader' && jobId && (currentJobIdRef.current === jobId) && !documentText) {
       const getTextContent = async () => {
         try {
           setIsLoading(true);
@@ -36,15 +53,15 @@ export default function ConversionResult() {
             throw new Error('Received empty text content');
           }
           
-          if (isMounted.current) {
+          if (isMounted.current && currentJobIdRef.current === jobId) {
             setDocumentText(text);
           }
         } catch (err) {
-          if (isMounted.current) {
+          if (isMounted.current && currentJobIdRef.current === jobId) {
             setFetchError(err.message || 'Failed to load document');
           }
         } finally {
-          if (isMounted.current) {
+          if (isMounted.current && currentJobIdRef.current === jobId) {
             setIsLoading(false);
           }
         }
@@ -61,6 +78,15 @@ export default function ConversionResult() {
   const handleRetry = () => {
     setDocumentText('');
     setFetchError(null);
+  };
+
+  const handleResetConversion = () => {
+    // Clear the document text first
+    setDocumentText('');
+    setFetchError(null);
+    
+    // Then reset the conversion
+    resetConversion();
   };
 
   return (
@@ -186,7 +212,7 @@ export default function ConversionResult() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={resetConversion}
+                onClick={handleResetConversion}
                 className={`flex-1 font-medium py-3 px-4 rounded-lg flex items-center justify-center ${
                   darkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'
                 }`}
@@ -213,7 +239,7 @@ export default function ConversionResult() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={resetConversion}
+              onClick={handleResetConversion}
               className="w-full bg-[#6246ea] hover:bg-[#5438d0] text-white font-medium py-3 px-4 rounded-lg flex items-center justify-center"
             >
               <FiRefreshCw className="mr-2" />

@@ -1,6 +1,7 @@
 'use client';
 
-import { useTheme } from '@/contexts/ThemeContext';
+import Link from 'next/link';
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Footer() {
   const { darkMode } = useTheme();
@@ -50,26 +51,28 @@ export default function Footer() {
           </span>
         </div>
 
-        {/* Right: Links */}
-        <div className="w-full md:w-1/3 flex justify-end space-x-6">
-          <a
-            href="#"
-            className={`hover:text-[#6246ea] transition-colors duration-300 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-          >
-            Terms of Service
-          </a>
-          <a
-            href="#"
-            className={`hover:text-[#6246ea] transition-colors duration-300 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-          >
-            Privacy Policy
-          </a>
-          <a
-            href="#"
-            className={`hover:text-[#6246ea] transition-colors duration-300 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-          >
-            Contact Us
-          </a>
+        {/* Right: Links - with equal width each */}
+        <div className="w-full md:w-1/3 flex justify-end">
+          <div className="grid grid-cols-3 w-full gap-2">
+            <Link
+              href="/terms"
+              className={`text-center hover:text-[#6246ea] transition-colors duration-300 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+            >
+              Terms
+            </Link>
+            <Link
+              href="/privacy"
+              className={`text-center hover:text-[#6246ea] transition-colors duration-300 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/contact"
+              className={`text-center hover:text-[#6246ea] transition-colors duration-300 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+            >
+              Contact
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

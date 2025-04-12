@@ -7,6 +7,8 @@ import os from 'os';
 import { convertToText } from '@/lib/conversion';
 import jobStore from '@/lib/jobStore'; // Use the new job store
 
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
+
 export async function POST(request) {
   try {
     console.log("Upload route handler started");
@@ -35,6 +37,15 @@ export async function POST(request) {
     }
 
     console.log("File received:", file.name, "Type:", file.type, "Size:", file.size);
+
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      console.log("File too large:", file.size);
+      return NextResponse.json(
+        { error: 'File size exceeds the maximum limit of 4MB' }, 
+        { status: 400 }
+      );
+    }
 
     // Validate file type
     const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/tiff', 'image/bmp', 'image/webp'];

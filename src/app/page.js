@@ -9,6 +9,7 @@ import ConversionResult from "@/components/conversion/ConversionResult";
 import EntranceLines from "@/components/animations/EntranceLines";
 import PageLoader from "@/components/animations/PageLoader";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function Home() {
   const { darkMode } = useTheme();
@@ -61,22 +62,21 @@ export default function Home() {
                 }`}
               >
                 Welcome to eBookify, your solution for converting PDF files into
-                reader-friendly e-book formats. Transform your static PDFs into
-                dynamic EPUBs optimized for all your e-reader devices.
+                reader-friendly text formats. Generate optimized books for e-readers.
               </p>
               <img
-                src="/witch-hat.png" // Path relative to the public folder in Next.js
-                alt="The witch's hat" // Alt text for accessibility
-                style={{
-                  transform: "translate(-85px, -200px)", // Move 50px to the right and 30px up
-                  marginTop: "0rem",
-                  width: "3.5rem",
-                  height: "auto",
-                  display: "block",
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                }} // Inline styles
+                src="/witch-hat.png"
+                alt="The witch's hat"
+                className="
+                  hidden md:block
+                  mx-auto
+                  mt-0
+                  w-14
+                  -translate-x-[83.5px]
+                  -translate-y-[167px]
+                "
               />
+
             </div>
 
             <div className="w-full">
@@ -116,7 +116,7 @@ export default function Home() {
                 <h3 className="text-xl font-semibold mb-2">Simple Upload</h3>
                 <p>
                   Drag and drop your PDF files or browse to select them. We
-                  support batch processing for multiple files.
+                  support a variety of formats including images and PDFs up to 4MB.
                 </p>
               </div>
 
@@ -177,7 +177,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Instant Download</h3>
                 <p>
-                  Download your converted EPUB files immediately after
+                  Download your converted text files immediately after
                   processing. No registration required for basic conversions.
                 </p>
               </div>
