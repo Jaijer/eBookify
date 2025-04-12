@@ -1,11 +1,9 @@
 // src/lib/conversion.js
 import { promises as fs } from 'fs';
 import path from 'path';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
-import { createCanvas } from 'canvas';
-
-// Set the PDF.js worker source
-pdfjsLib.GlobalWorkerOptions.workerSrc = '//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.js';
+import pdfParse from 'pdf-parse';
+import fetch from 'node-fetch';
+import FormData from 'form-data';
 
 /**
  * Convert a PDF or image file to text
@@ -29,50 +27,40 @@ export async function convertToText(inputPath, outputPath, options = {}) {
 }
 
 /**
- * Convert PDF to text using pdf.js
+ * Convert PDF to text using pdf-parse
  */
 export async function convertPdfToText(pdfPath, outputPath, options = {}) {
   try {
     // Read the file data
-    const data = await fs.readFile(pdfPath);
-    const buffer = new Uint8Array(data);
+    const dataBuffer = await fs.readFile(pdfPath);
     
-    // Load the PDF document
-    const pdfDocument = await pdfjsLib.getDocument({ data: buffer }).promise;
-    let textContent = '';
+    // Extract text from PDF
+    const data = await pdfParse(dataBuffer);
     
-    // Extract text from each page
-    for (let i = 1; i <= pdfDocument.numPages; i++) {
-      const page = await pdfDocument.getPage(i);
-      const content = await page.getTextContent();
-      
-      // Concatenate the text items
-      const pageText = content.items.map(item => item.str).join(' ');
-      textContent += pageText + '\n\n';
-    }
-    
-    // Write the text to the output file
-    await fs.writeFile(outputPath, textContent);
+    // Write the extracted text to file
+    await fs.writeFile(outputPath, data.text);
     return outputPath;
   } catch (error) {
     console.error('PDF conversion error:', error);
-    throw new Error(`PDF conversion failed: ${error.message}`);
+    
+    // Write a fallback message if conversion fails
+    const fallbackMessage = `PDF text extraction failed. This might be due to security settings in the PDF or text stored as images.`;
+    await fs.writeFile(outputPath, fallbackMessage);
+    
+    return outputPath;
   }
 }
 
 /**
- * Convert image to text
- * This uses pdf.js with canvas to extract any text that might be in the image
- * For better OCR results, consider integrating with a service like OCR.space API
+ * Convert image to text using OCR.space API
  */
 async function convertImageToText(imagePath, outputPath, options = {}) {
   try {
-    // For images, we'll use a third-party OCR API service
-    console.log("MY API KEY:", process.env.OCR_SPACE_API_KEY)
+    // Get the API key from environment variables
     const apiKey = process.env.OCR_SPACE_API_KEY || options.apiKey;
     
     if (!apiKey) {
-      // Fallback to basic text extraction
+      // Fallback message if no API key is available
       await fs.writeFile(outputPath, 'Image text extraction requires an OCR service API key. Please configure OCR_SPACE_API_KEY environment variable.');
       return outputPath;
     }
@@ -80,12 +68,17 @@ async function convertImageToText(imagePath, outputPath, options = {}) {
     // Read the image file
     const imageBuffer = await fs.readFile(imagePath);
     
-    // Create a multipart form data
+    // Create a multipart form-data object
     const formData = new FormData();
     formData.append('apikey', apiKey);
     formData.append('language', 'eng');
     formData.append('OCREngine', '2');
-    formData.append('file', new Blob([imageBuffer]), path.basename(imagePath));
+    formData.append('file', imageBuffer, {
+      filename: path.basename(imagePath),
+      contentType: getContentType(path.extname(imagePath))
+    });
+    
+    console.log(`Sending OCR request for file: ${path.basename(imagePath)}`);
     
     // Call the OCR.space API
     const response = await fetch('https://api.ocr.space/parse/image', {
@@ -94,23 +87,40 @@ async function convertImageToText(imagePath, outputPath, options = {}) {
     });
     
     const result = await response.json();
+    console.log('OCR API response status:', result.OCRExitCode);
     
-    if (!result.ParsedResults || result.ParsedResults.length === 0) {
-      throw new Error('OCR processing failed: ' + (result.ErrorMessage || 'Unknown error'));
+    if (result.OCRExitCode !== 1 || !result.ParsedResults || result.ParsedResults.length === 0) {
+      throw new Error('OCR processing failed: ' + (result.ErrorMessage || JSON.stringify(result)));
     }
     
     // Write the extracted text to the output file
-    const extractedText = result.ParsedResults[0].ParsedText;
+    const extractedText = result.ParsedResults[0].ParsedText || 'No text detected in image.';
     await fs.writeFile(outputPath, extractedText);
     
     return outputPath;
   } catch (error) {
-    console.error('Image conversion error:', error);
+    console.error('Image OCR error:', error);
     
     // Write a placeholder message
-    await fs.writeFile(outputPath, 'Image text extraction failed. Please try a different image or a PDF file.');
+    await fs.writeFile(outputPath, `Image text extraction failed: ${error.message}. Please try a different image or a PDF file.`);
     return outputPath;
   }
+}
+
+/**
+ * Get the content type based on file extension
+ */
+function getContentType(extension) {
+  const contentTypes = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.tiff': 'image/tiff',
+    '.bmp': 'image/bmp',
+    '.webp': 'image/webp'
+  };
+  
+  return contentTypes[extension.toLowerCase()] || 'application/octet-stream';
 }
 
 /**
