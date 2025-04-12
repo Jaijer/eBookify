@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
-import { convertPdfToEpub } from '@/lib/conversion';
+import { convertToText } from '@/lib/conversion';
 
 // In-memory job storage (will be reset on server restart)
 // For production, consider using Redis or similar for persistence
@@ -26,9 +26,10 @@ export async function POST(request) {
     }
 
     // Validate file type
-    if (!file.type || !file.type.includes('pdf')) {
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/tiff', 'image/bmp', 'image/webp'];
+    if (!file.type || !validTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Only PDF files are supported' }, 
+        { error: 'File type not supported. Please upload PDF or image files (JPEG, PNG, TIFF, BMP, WEBP)' }, 
         { status: 400 }
       );
     }
@@ -37,16 +38,32 @@ export async function POST(request) {
     const jobId = uuidv4();
     
     // Create temp directory if it doesn't exist
-    const tmpDir = path.join(os.tmpdir(), 'ebookify');
+    const tmpDir = path.join(os.tmpdir(), 'textify');
     await fs.mkdir(tmpDir, { recursive: true });
+    
+    // Determine file extension
+    let fileExtension = '';
+    if (file.type === 'application/pdf') {
+      fileExtension = '.pdf';
+    } else if (file.type === 'image/jpeg') {
+      fileExtension = '.jpg';
+    } else if (file.type === 'image/png') {
+      fileExtension = '.png';
+    } else if (file.type === 'image/tiff') {
+      fileExtension = '.tiff';
+    } else if (file.type === 'image/bmp') {
+      fileExtension = '.bmp';
+    } else if (file.type === 'image/webp') {
+      fileExtension = '.webp';
+    }
     
     // Save file to disk
     const buffer = Buffer.from(await file.arrayBuffer());
-    const filePath = path.join(tmpDir, `${jobId}.pdf`);
+    const filePath = path.join(tmpDir, `${jobId}${fileExtension}`);
     await fs.writeFile(filePath, buffer);
     
     // Define output path
-    const outputPath = path.join(tmpDir, `${jobId}.epub`);
+    const outputPath = path.join(tmpDir, `${jobId}.txt`);
     
     // Register the job
     conversionJobs.set(jobId, {
@@ -90,18 +107,31 @@ async function startConversion(jobId) {
     // Set initial progress
     updateProgress(20);
     
-    // Progress updates every 2 seconds
+    // Progress updates
+    const progressUpdates = [
+      { progress: 30, delay: 1000 },  // Initial processing
+      { progress: 50, delay: 3000 },  // OCR processing
+      { progress: 70, delay: 2000 },  // Text extraction
+      { progress: 90, delay: 1000 }   // Finalizing
+    ];
+    
+    let currentUpdateIndex = 0;
+    
     const progressInterval = setInterval(() => {
-      if (job.progress >= 90) {
+      if (currentUpdateIndex >= progressUpdates.length) {
         clearInterval(progressInterval);
         return;
       }
-      updateProgress(job.progress + 10);
-    }, 2000);
+      
+      const update = progressUpdates[currentUpdateIndex];
+      updateProgress(update.progress);
+      currentUpdateIndex++;
+      
+    }, progressUpdates[currentUpdateIndex].delay);
     
     try {
       // Perform the actual conversion
-    //   await convertPdfToEpub(job.filePath, job.outputPath);
+      await convertToText(job.filePath, job.outputPath);
       
       // Set job to complete
       job.status = 'complete';
@@ -113,7 +143,7 @@ async function startConversion(jobId) {
       job.status = 'error';
       job.error = `Conversion failed: ${err.message}`;
       clearInterval(progressInterval);
-      console.error('PDF conversion error:', err);
+      console.error('Conversion error:', err);
     }
     
   } catch (error) {

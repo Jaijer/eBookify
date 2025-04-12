@@ -31,15 +31,15 @@ export async function GET(request, { params }) {
     const fileBuffer = await fs.readFile(job.outputPath);
     
     // Prepare filename
-    const originalName = job.originalFilename || 'document.pdf';
-    const downloadName = originalName.replace(/\.pdf$/i, '.epub');
+    const originalName = job.originalFilename || 'document';
+    const downloadName = originalName.replace(/\.(pdf|jpg|jpeg|png|tiff|bmp|webp)$/i, '.txt');
     
     // Return file as a response
     const response = new NextResponse(fileBuffer);
     
     // Set headers for file download
     response.headers.set('Content-Disposition', `attachment; filename="${downloadName}"`);
-    response.headers.set('Content-Type', 'application/epub+zip');
+    response.headers.set('Content-Type', 'text/plain; charset=utf-8');
     
     // Schedule cleanup after download (async)
     setTimeout(() => {

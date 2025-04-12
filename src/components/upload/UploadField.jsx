@@ -1,4 +1,4 @@
-// src/components/upload/UploadField.jsx - updated version
+// src/components/upload/UploadField.jsx
 'use client';
 
 import { useCallback } from 'react';
@@ -23,8 +23,14 @@ export default function UploadField() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/pdf': ['.pdf']
+      'application/pdf': ['.pdf'],
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/tiff': ['.tiff', '.tif'],
+      'image/bmp': ['.bmp'],
+      'image/webp': ['.webp']
     },
+    maxSize: 50 * 1024 * 1024, // 50MB
     disabled: status !== 'idle'
   });
 
@@ -73,7 +79,9 @@ export default function UploadField() {
                 </>
               )}
             </div>
-            <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-4`}>Supports PDF files up to 50MB</p>
+            <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-4`}>
+              Supports PDF and image files (JPG, PNG, TIFF, BMP, WEBP) up to 50MB
+            </p>
           </div>
         </div>
       )}
