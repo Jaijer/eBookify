@@ -1,15 +1,17 @@
 // src/lib/conversion.js
 import { promises as fs } from 'fs';
 import path from 'path';
-import pdfParse from 'pdf-parse';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
+import { PDFDocument } from 'pdf-lib';
+
 
 /**
  * Convert a PDF or image file to text
  */
 export async function convertToText(inputPath, outputPath, options = {}) {
   try {
+    // Create output directory if it doesn't exist
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
     const ext = path.extname(inputPath).toLowerCase();
 
@@ -29,24 +31,42 @@ export async function convertToText(inputPath, outputPath, options = {}) {
 /**
  * Convert PDF to text using pdf-parse
  */
-export async function convertPdfToText(pdfPath, outputPath, options = {}) {
+export async function convertPdfToText(pdfPath, outputPath) {
   try {
-    // Read the file data
+    // Verify the input file exists
+    try {
+      await fs.access(pdfPath);
+    } catch (err) {
+      throw new Error(`Input PDF not found: ${pdfPath}`);
+    }
+
+    // Read the PDF file
     const dataBuffer = await fs.readFile(pdfPath);
+
+    // Use a clean require instead of import to avoid test file issues
+    const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
     
-    // Extract text from PDF
-    const data = await pdfParse(dataBuffer);
-    
-    // Write the extracted text to file
+    // Parse with options to skip test file checks
+    const data = await pdfParse(dataBuffer, {
+      pkgPath: null, // Disable package path checks
+      max: 0 // Disable length checks
+    });
+
+    // Save the extracted text
     await fs.writeFile(outputPath, data.text);
     return outputPath;
   } catch (error) {
     console.error('PDF conversion error:', error);
     
-    // Write a fallback message if conversion fails
-    const fallbackMessage = `PDF text extraction failed. This might be due to security settings in the PDF or text stored as images.`;
-    await fs.writeFile(outputPath, fallbackMessage);
+    // Provide a more helpful error message
+    let errorMessage = `PDF text extraction failed. `;
+    if (error.message.includes('ENOENT')) {
+      errorMessage += `The PDF parser encountered an internal file access error.`;
+    } else {
+      errorMessage += `Reason: ${error.message}`;
+    }
     
+    await fs.writeFile(outputPath, errorMessage);
     return outputPath;
   }
 }
@@ -56,6 +76,14 @@ export async function convertPdfToText(pdfPath, outputPath, options = {}) {
  */
 async function convertImageToText(imagePath, outputPath, options = {}) {
   try {
+    // Check if the file exists
+    try {
+      await fs.access(imagePath);
+    } catch (error) {
+      console.error(`File does not exist at path: ${imagePath}`);
+      throw new Error(`Image file not found: ${error.message}`);
+    }
+    
     // Get the API key from environment variables
     const apiKey = process.env.OCR_SPACE_API_KEY || options.apiKey;
     
@@ -129,7 +157,15 @@ function getContentType(extension) {
 export async function cleanupFile(filePath) {
   try {
     if (filePath) {
-      await fs.unlink(filePath).catch(() => {});
+      // Check if file exists before attempting to delete
+      try {
+        await fs.access(filePath);
+        await fs.unlink(filePath);
+        console.log(`Successfully cleaned up file: ${filePath}`);
+      } catch (err) {
+        // File doesn't exist, no need to delete
+        console.log(`File does not exist, skipping cleanup: ${filePath}`);
+      }
     }
   } catch (error) {
     console.error('Cleanup error:', error);

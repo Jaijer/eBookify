@@ -4,7 +4,8 @@ import { conversionJobs } from '../../upload/route';
 
 export async function GET(request, { params }) {
   try {
-    const { jobId } = params;
+    // Properly destructure params after awaiting
+    const jobId = params.jobId;
     const job = conversionJobs.get(jobId);
     
     if (!job) {

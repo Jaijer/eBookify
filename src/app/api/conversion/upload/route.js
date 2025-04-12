@@ -56,8 +56,8 @@ export async function POST(request) {
     const jobId = uuidv4();
     console.log("Generated job ID:", jobId);
     
-    // Create temp directory if it doesn't exist
-    const tmpDir = path.join(os.tmpdir(), 'textify');
+    // Create temp directory if it doesn't exist - use 'ebookify' not 'textify'
+    const tmpDir = path.join(os.tmpdir(), 'ebookify');
     try {
       await fs.mkdir(tmpDir, { recursive: true });
       console.log("Temp directory created/confirmed:", tmpDir);
@@ -148,33 +148,32 @@ async function startConversion(jobId) {
   }
   
   job.status = 'processing';
-  
+  let shouldContinue = true;
+
   try {
-    // Update progress at intervals to simulate steps
     const updateProgress = (progress) => {
+      if (!shouldContinue) return;
       job.progress = progress;
       console.log(`Job ${jobId} progress updated to ${progress}%`);
     };
     
-    // Set initial progress
     updateProgress(20);
     
-    // Progress updates
     const progressUpdates = [
-      { progress: 30, delay: 500 },  // Initial processing
-      { progress: 50, delay: 1000 }, // Text extraction
-      { progress: 70, delay: 1000 }, // Text formatting
-      { progress: 90, delay: 500 }   // Finalizing
+      { progress: 30, delay: 500 },
+      { progress: 50, delay: 1000 },
+      { progress: 70, delay: 1000 },
+      { progress: 90, delay: 500 }
     ];
     
-    // Use timeouts instead of intervals for more reliable execution
     let currentUpdateIndex = 0;
     
     const scheduleNextUpdate = () => {
-      if (currentUpdateIndex >= progressUpdates.length) return;
+      if (!shouldContinue || currentUpdateIndex >= progressUpdates.length) return;
       
       const update = progressUpdates[currentUpdateIndex];
       setTimeout(() => {
+        if (!shouldContinue) return;
         updateProgress(update.progress);
         currentUpdateIndex++;
         scheduleNextUpdate();
@@ -185,22 +184,23 @@ async function startConversion(jobId) {
     
     try {
       console.log("Starting actual conversion process for file:", job.filePath);
-      // Perform the actual conversion
       await convertToText(job.filePath, job.outputPath);
       console.log("Conversion completed successfully");
 
-      // Set job to complete
       job.status = 'complete';
       job.progress = 100;
       job.resultUrl = `/api/conversion/download/${jobId}`;
       
     } catch (conversionError) {
+      shouldContinue = false;
       console.error('Conversion process error:', conversionError);
       job.status = 'error';
+      job.progress = 0;
       job.error = `Conversion failed: ${conversionError.message}`;
     }
     
   } catch (error) {
+    shouldContinue = false;
     console.error('Conversion wrapper error:', error);
     job.status = 'error';
     job.error = 'Conversion process failed';
