@@ -1,11 +1,23 @@
 import { NextResponse } from 'next/server';
+import { conversionJobs } from '../../upload/route';
 
-// This would be fetched from a database in a real app
-const conversionJobs = new Map();
+// Clean up expired jobs
+function cleanupExpiredJobs() {
+  const now = Date.now();
+  for (const [jobId, job] of conversionJobs.entries()) {
+    if (job.expiresAt && job.expiresAt < now) {
+      conversionJobs.delete(jobId);
+    }
+  }
+}
 
 export async function GET(request, { params }) {
   try {
-    const { jobId } = params;
+    // Periodically clean up expired jobs
+    cleanupExpiredJobs();
+    
+    // Destructure params asynchronously
+    const { jobId } = await params; // <-- Add 'await' here
     const job = conversionJobs.get(jobId);
     
     if (!job) {
@@ -19,6 +31,7 @@ export async function GET(request, { params }) {
       status: job.status,
       progress: job.progress,
       resultUrl: job.resultUrl,
+      error: job.error
     });
     
   } catch (error) {

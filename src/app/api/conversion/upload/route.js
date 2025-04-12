@@ -1,13 +1,17 @@
-// src/app/api/conversion/upload/route.js - updated version
+// src/app/api/conversion/upload/route.js
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { convertPdfToEpub } from '@/lib/conversion';
 
-// In a real app, you'd use a database or service for job tracking
+// In-memory job storage (will be reset on server restart)
+// For production, consider using Redis or similar for persistence
 const conversionJobs = new Map();
+
+// Make conversionJobs available to other route handlers
+export { conversionJobs };
 
 export async function POST(request) {
   try {
@@ -34,25 +38,29 @@ export async function POST(request) {
     
     // Create temp directory if it doesn't exist
     const tmpDir = path.join(os.tmpdir(), 'ebookify');
-    if (!fs.existsSync(tmpDir)) {
-      fs.mkdirSync(tmpDir, { recursive: true });
-    }
+    await fs.mkdir(tmpDir, { recursive: true });
     
     // Save file to disk
     const buffer = Buffer.from(await file.arrayBuffer());
     const filePath = path.join(tmpDir, `${jobId}.pdf`);
-    fs.writeFileSync(filePath, buffer);
+    await fs.writeFile(filePath, buffer);
     
-    // Register the job (in a real app, this would be stored in a database)
+    // Define output path
+    const outputPath = path.join(tmpDir, `${jobId}.epub`);
+    
+    // Register the job
     conversionJobs.set(jobId, {
       originalFilename: file.name,
       filePath,
+      outputPath,
       status: 'uploaded',
       progress: 10,
       createdAt: new Date(),
+      // TTL in milliseconds - 1 hour
+      expiresAt: Date.now() + 3600000
     });
     
-    // Start conversion process (would be a background job in a real app)
+    // Start conversion process
     startConversion(jobId);
     
     return NextResponse.json({ jobId });
@@ -74,7 +82,7 @@ async function startConversion(jobId) {
   job.status = 'processing';
   
   try {
-    // Update progress at intervals to simulate conversion steps
+    // Update progress at intervals to simulate steps
     const updateProgress = (progress) => {
       job.progress = progress;
     };
@@ -82,7 +90,7 @@ async function startConversion(jobId) {
     // Set initial progress
     updateProgress(20);
     
-    // Progress updates
+    // Progress updates every 2 seconds
     const progressInterval = setInterval(() => {
       if (job.progress >= 90) {
         clearInterval(progressInterval);
@@ -91,33 +99,22 @@ async function startConversion(jobId) {
       updateProgress(job.progress + 10);
     }, 2000);
     
-    // Output path for the converted file
-    const outputDir = path.join(os.tmpdir(), 'ebookify');
-    const outputPath = path.join(outputDir, `${jobId}.epub`);
-    
-    // In a real app, this would be an actual conversion
-    // For demo, we'll just wait a bit and create a mock file
-    setTimeout(async () => {
-      try {
-        // In production, call the real conversion function:
-        // await convertPdfToEpub(job.filePath, outputPath);
-        
-        // For demo, just create a mock file
-        fs.writeFileSync(outputPath, 'Mock EPUB content');
-        
-        // Set job to complete
-        job.status = 'complete';
-        job.progress = 100;
-        job.resultUrl = `/api/conversion/download/${jobId}`;
-        job.outputPath = outputPath;
-        
-        clearInterval(progressInterval);
-      } catch (err) {
-        job.status = 'error';
-        job.error = 'Conversion failed';
-        clearInterval(progressInterval);
-      }
-    }, 8000);
+    try {
+      // Perform the actual conversion
+    //   await convertPdfToEpub(job.filePath, job.outputPath);
+      
+      // Set job to complete
+      job.status = 'complete';
+      job.progress = 100;
+      job.resultUrl = `/api/conversion/download/${jobId}`;
+      
+      clearInterval(progressInterval);
+    } catch (err) {
+      job.status = 'error';
+      job.error = `Conversion failed: ${err.message}`;
+      clearInterval(progressInterval);
+      console.error('PDF conversion error:', err);
+    }
     
   } catch (error) {
     job.status = 'error';

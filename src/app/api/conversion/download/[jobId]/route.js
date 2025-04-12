@@ -1,9 +1,9 @@
+// src/app/api/conversion/download/[jobId]/route.js
 import { NextResponse } from 'next/server';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
-
-// This would be fetched from a database in a real app
-const conversionJobs = new Map();
+import { conversionJobs } from '../../upload/route';
+import { cleanupFile } from '@/lib/conversion';
 
 export async function GET(request, { params }) {
   try {
@@ -17,8 +17,10 @@ export async function GET(request, { params }) {
       );
     }
     
-    // In a real app, you'd check if the file exists
-    if (!job.outputPath || !fs.existsSync(job.outputPath)) {
+    // Check if the file exists
+    try {
+      await fs.access(job.outputPath);
+    } catch (error) {
       return NextResponse.json(
         { error: 'File not found' }, 
         { status: 404 }
@@ -26,10 +28,10 @@ export async function GET(request, { params }) {
     }
     
     // Read the file content
-    const fileBuffer = fs.readFileSync(job.outputPath);
+    const fileBuffer = await fs.readFile(job.outputPath);
     
-    // Prepare filename - replace .pdf with .epub
-    const originalName = job.originalFilename || 'download.pdf';
+    // Prepare filename
+    const originalName = job.originalFilename || 'document.pdf';
     const downloadName = originalName.replace(/\.pdf$/i, '.epub');
     
     // Return file as a response
@@ -38,6 +40,13 @@ export async function GET(request, { params }) {
     // Set headers for file download
     response.headers.set('Content-Disposition', `attachment; filename="${downloadName}"`);
     response.headers.set('Content-Type', 'application/epub+zip');
+    
+    // Schedule cleanup after download (async)
+    setTimeout(() => {
+      // Only clean up files after download, keep job info
+      if (job.filePath) cleanupFile(job.filePath);
+      if (job.outputPath) cleanupFile(job.outputPath);
+    }, 5000);
     
     return response;
     

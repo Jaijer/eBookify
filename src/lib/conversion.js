@@ -1,13 +1,13 @@
+// src/lib/conversion.js
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
-import epubjs from 'epubjs';
 
 const execPromise = promisify(exec);
 
 /**
- * Convert a PDF file to EPUB format
+ * Convert a PDF file to EPUB format using Calibre's ebook-convert
  * @param {string} pdfPath - Path to the PDF file
  * @param {string} outputPath - Path where the EPUB file should be saved
  * @param {object} options - Conversion options
@@ -15,73 +15,37 @@ const execPromise = promisify(exec);
  */
 export async function convertPdfToEpub(pdfPath, outputPath, options = {}) {
   try {
-    // In a production app, you would use a proper PDF to EPUB conversion library
-    // or call a service like Calibre's ebook-convert CLI tool
+    // Create directory if it doesn't exist
+    const outputDir = path.dirname(outputPath);
+    await fs.mkdir(outputDir, { recursive: true });
+
+    // Build the Calibre command
+    const command = `ebook-convert "${pdfPath}" "${outputPath}" --enable-heuristics --chapter-mark=pagebreak --page-breaks-before=/ --max-toc-links=0 --pretty-print`;
     
-    // For demonstration, we'll create a simple EPUB structure
+    // Execute the command
+    const { stdout, stderr } = await execPromise(command);
     
-    // 1. Extract text from PDF (simulation)
-    const textContent = await extractTextFromPdf(pdfPath);
-    
-    // 2. Create an EPUB file with the extracted content
-    await createEpub(textContent, outputPath, options);
-    
-    return outputPath;
+    // Check if the file was created
+    try {
+      await fs.access(outputPath);
+      return outputPath;
+    } catch (error) {
+      throw new Error(`EPUB file was not created: ${stderr}`);
+    }
   } catch (error) {
     console.error('Conversion error:', error);
-    throw new Error('Failed to convert PDF to EPUB');
+    throw new Error(`Failed to convert PDF to EPUB: ${error.message}`);
   }
 }
 
 /**
- * Extract text from a PDF file
- * This is a simplified simulation - in a real app, you'd use a proper PDF parser
+ * Clean up temporary files
+ * @param {string} filePath - Path to the file to delete
  */
-async function extractTextFromPdf(pdfPath) {
-  // In a real app, you'd use a library like pdf.js or pdfparser
-  // For now, we'll return mock content
-  return {
-    title: 'Converted Book',
-    chapters: [
-      {
-        title: 'Chapter 1',
-        content: 'This is the content of chapter 1, extracted from the PDF.'
-      },
-      {
-        title: 'Chapter 2',
-        content: 'This is the content of chapter 2, extracted from the PDF.'
-      }
-    ]
-  };
-}
-
-/**
- * Create an EPUB file from extracted content
- */
-async function createEpub(content, outputPath, options) {
-  // In a real app, you'd use a library like epub-gen or calibre's ebook-convert
-  // For now, we'll create a simple file
-  
-  const epub = new epubjs.Book();
-  
-  // Set metadata
-  epub.metadata = {
-    title: content.title,
-    creator: options.author || 'Unknown',
-    publisher: 'eBookify',
-    modified: new Date()
-  };
-  
-  // Add chapters
-  for (const chapter of content.chapters) {
-    epub.addSection(chapter.title, `<h1>${chapter.title}</h1><p>${chapter.content}</p>`);
+export async function cleanupFile(filePath) {
+  try {
+    await fs.unlink(filePath);
+  } catch (error) {
+    console.error(`Failed to delete file ${filePath}:`, error);
   }
-  
-  // Generate EPUB
-  await epub.generateAsync({ type: 'nodebuffer' })
-    .then(buffer => {
-      fs.writeFileSync(outputPath, buffer);
-    });
-  
-  return outputPath;
 }
