@@ -5,13 +5,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { convertToText } from '@/lib/conversion';
-
-// In-memory job storage (will be reset on server restart)
-// For production, consider using Redis or similar for persistence
-const conversionJobs = new Map();
-
-// Make conversionJobs available to other route handlers
-export { conversionJobs };
+import jobStore from '@/lib/jobStore'; // Use the new job store
 
 export async function POST(request) {
   try {
@@ -56,7 +50,7 @@ export async function POST(request) {
     const jobId = uuidv4();
     console.log("Generated job ID:", jobId);
     
-    // Create temp directory if it doesn't exist - use 'ebookify' not 'textify'
+    // Create temp directory if it doesn't exist
     const tmpDir = path.join(os.tmpdir(), 'ebookify');
     try {
       await fs.mkdir(tmpDir, { recursive: true });
@@ -102,28 +96,28 @@ export async function POST(request) {
     // Define output path
     const outputPath = path.join(tmpDir, `${jobId}.txt`);
     
-    // Register the job
-    conversionJobs.set(jobId, {
+    // Register the job using our persistent job store
+    await jobStore.set(jobId, {
       originalFilename: file.name,
       filePath,
       outputPath,
       status: 'uploaded',
       progress: 10,
-      createdAt: new Date(),
-      // TTL in milliseconds - 1 hour
-      expiresAt: Date.now() + 3600000
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 3600000).toISOString() // 1 hour TTL
     });
     
-    console.log("Job registered, starting conversion process");
+    console.log("Job registered in persistent store, starting conversion process");
     
     // Start conversion process asynchronously
     startConversion(jobId).catch(err => {
       console.error("Conversion process failed:", err);
-      const job = conversionJobs.get(jobId);
-      if (job) {
-        job.status = 'error';
-        job.error = `Conversion failed: ${err.message}`;
-      }
+      jobStore.update(jobId, {
+        status: 'error',
+        error: `Conversion failed: ${err.message}`
+      }).catch(storeErr => {
+        console.error("Failed to update job status:", storeErr);
+      });
     });
     
     console.log("Returning successful response with jobId:", jobId);
@@ -140,24 +134,30 @@ export async function POST(request) {
 
 async function startConversion(jobId) {
   console.log("Starting conversion for job:", jobId);
-  const job = conversionJobs.get(jobId);
+  
+  // Get the job from our persistent store
+  const job = await jobStore.get(jobId);
   
   if (!job) {
     console.log("Job not found:", jobId);
     return;
   }
   
-  job.status = 'processing';
+  // Update job status
+  await jobStore.update(jobId, {
+    status: 'processing'
+  });
+  
   let shouldContinue = true;
 
   try {
-    const updateProgress = (progress) => {
+    const updateProgress = async (progress) => {
       if (!shouldContinue) return;
-      job.progress = progress;
+      await jobStore.update(jobId, { progress });
       console.log(`Job ${jobId} progress updated to ${progress}%`);
     };
     
-    updateProgress(20);
+    await updateProgress(20);
     
     const progressUpdates = [
       { progress: 30, delay: 500 },
@@ -166,43 +166,44 @@ async function startConversion(jobId) {
       { progress: 90, delay: 500 }
     ];
     
-    let currentUpdateIndex = 0;
-    
-    const scheduleNextUpdate = () => {
-      if (!shouldContinue || currentUpdateIndex >= progressUpdates.length) return;
+    // Schedule progress updates
+    for (const update of progressUpdates) {
+      if (!shouldContinue) break;
       
-      const update = progressUpdates[currentUpdateIndex];
-      setTimeout(() => {
-        if (!shouldContinue) return;
-        updateProgress(update.progress);
-        currentUpdateIndex++;
-        scheduleNextUpdate();
-      }, update.delay);
-    };
-    
-    scheduleNextUpdate();
+      await new Promise(resolve => setTimeout(resolve, update.delay));
+      await updateProgress(update.progress);
+    }
     
     try {
       console.log("Starting actual conversion process for file:", job.filePath);
       await convertToText(job.filePath, job.outputPath);
       console.log("Conversion completed successfully");
 
-      job.status = 'complete';
-      job.progress = 100;
-      job.resultUrl = `/api/conversion/download/${jobId}`;
+      // Update job with completion status
+      await jobStore.update(jobId, {
+        status: 'complete',
+        progress: 100,
+        resultUrl: `/api/conversion/download/${jobId}`
+      });
       
     } catch (conversionError) {
       shouldContinue = false;
       console.error('Conversion process error:', conversionError);
-      job.status = 'error';
-      job.progress = 0;
-      job.error = `Conversion failed: ${conversionError.message}`;
+      
+      await jobStore.update(jobId, {
+        status: 'error',
+        progress: 0,
+        error: `Conversion failed: ${conversionError.message}`
+      });
     }
     
   } catch (error) {
     shouldContinue = false;
     console.error('Conversion wrapper error:', error);
-    job.status = 'error';
-    job.error = 'Conversion process failed';
+    
+    await jobStore.update(jobId, {
+      status: 'error',
+      error: 'Conversion process failed'
+    });
   }
 }

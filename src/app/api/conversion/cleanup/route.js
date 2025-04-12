@@ -1,8 +1,9 @@
+// src/app/api/conversion/cleanup/route.js
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
-import { conversionJobs } from '../upload/route';
+import jobStore from '@/lib/jobStore'; // Use the new job store
 import { cleanupFile } from '@/lib/conversion';
 
 // This route could be called by a scheduled task or explicitly
@@ -17,6 +18,9 @@ export async function POST(request) {
       
       for (const file of files) {
         try {
+          // Skip the jobs.json file
+          if (file === 'jobs.json') continue;
+          
           // Consider files older than 1 hour as stale
           const filePath = path.join(tmpDir, file);
           const stats = await fs.stat(filePath);
@@ -35,32 +39,20 @@ export async function POST(request) {
       console.error('Failed to read temp directory:', err);
     }
     
-    // Cleanup expired jobs
-    const now = Date.now();
-    let jobsDeleted = 0;
-    
-    for (const [jobId, job] of conversionJobs.entries()) {
-      if (job.expiresAt && job.expiresAt < now) {
-        // Clean up files
-        if (job.filePath) await cleanupFile(job.filePath);
-        if (job.outputPath) await cleanupFile(job.outputPath);
-        // Delete job
-        conversionJobs.delete(jobId);
-        jobsDeleted++;
-      }
-    }
+    // Cleanup expired jobs using our job store's cleanup method
+    const jobsDeleted = await jobStore.cleanup(3600000); // 1 hour
     
     return NextResponse.json({
       success: true,
       filesDeleted,
       jobsDeleted,
-      jobsRemaining: conversionJobs.size
+      jobsRemaining: (await jobStore.getAll()).length
     });
     
   } catch (error) {
     console.error('Cleanup error:', error);
     return NextResponse.json(
-      { error: 'Cleanup failed' }, 
+      { error: 'Cleanup failed: ' + error.message }, 
       { status: 500 }
     );
   }

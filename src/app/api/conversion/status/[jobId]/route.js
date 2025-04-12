@@ -1,5 +1,6 @@
+// src/app/api/conversion/status/[jobId]/route.js
 import { NextResponse } from 'next/server';
-import { conversionJobs } from '../../upload/route';
+import jobStore from '@/lib/jobStore'; // Use the new job store
 
 export async function GET(request, { params }) {
   try {
@@ -13,7 +14,8 @@ export async function GET(request, { params }) {
       );
     }
 
-    const job = conversionJobs.get(jobId);
+    // Get job from our persistent store
+    const job = await jobStore.get(jobId);
     
     if (!job) {
       return NextResponse.json(
@@ -33,7 +35,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error('Status check error:', error);
     return NextResponse.json(
-      { error: 'Status check failed' }, 
+      { error: 'Status check failed: ' + error.message }, 
       { status: 500 }
     );
   }
